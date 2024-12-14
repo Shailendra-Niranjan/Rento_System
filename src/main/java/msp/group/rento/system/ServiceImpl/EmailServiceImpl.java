@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 
 import javax.security.auth.Subject;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Date;
 
 @Service
@@ -33,8 +37,8 @@ public class EmailServiceImpl implements EmailService {
         mailSender.send(message);
     }
 
-    public void sendResetPassword(String to, String subject, String text , String name) throws IOException, MessagingException {
-        String content = loadTemplate("src/main/resources/New-Reset-password.html" , name , text);
+    public void sendResetPassword(String to, String subject, String text , String name) throws IOException, MessagingException, URISyntaxException {
+        String content = loadTemplate("New-Reset-password.html" , name , text);
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper =  new MimeMessageHelper(mimeMessage , true);
         helper.setFrom(fromEmail);
@@ -47,8 +51,8 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void userCreationMail(String to, String subject, String text, String name) throws IOException, MessagingException {
-        String content = loadUserCreationTemplate("src/main/resources/UserCreationTemplate.html" , name , to );
+    public void userCreationMail(String to, String subject, String text, String name) throws IOException, MessagingException, URISyntaxException {
+        String content = loadUserCreationTemplate("UserCreationTemplate.html" , name , to );
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper =  new MimeMessageHelper(mimeMessage , true);
         helper.setFrom(fromEmail);
@@ -60,48 +64,68 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void otpForUserCreationMail(String to, String name, String otp ) throws MessagingException, IOException {
+    public void otpForUserCreationMail(String to, String name, String otp ) throws MessagingException, IOException, URISyntaxException {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
         helper.setFrom(fromEmail);
         helper.setTo(to);
         helper.setSentDate(new Date());
-        String content = loadOTPEmailVerificationTemplate("src/main/resources/OTPForEmailVerificationTemplate.html" , name , otp);
+        String content = loadOTPEmailVerificationTemplate("OTPForEmailVerificationTemplate.html" , name , otp);
         helper.setSubject("OTP for Email Verification");
+//        System.out.print(content);
         helper.setText(content , true);
+        mailSender.send(mimeMessage);
 
     }
 
 
-    private String loadUserCreationTemplate(String fileName, String name, String email ) throws IOException {
+    private String loadUserCreationTemplate(String fileName, String name, String email ) throws IOException, URISyntaxException {
         // Read the HTML template file
+        String content  = "";
         ClassLoader classLoader = getClass().getClassLoader();
-        String content = new String(String.valueOf(classLoader.getResource(fileName)));
-
+        URL resource = classLoader.getResource(fileName);
+        if (resource != null) {
+            content = new String(Files.readAllBytes(Paths.get(resource.toURI())));
+//            System.out.println(content);
+        } else {
+            System.out.println("File not found!");
+        }
         // Replace user-specific details
-        content =content.replace("[User's Name]", name);
+        content =content.replace("[Subuser's Name]", name);
         content = content.replace("[username]", email);
 
 
         return content;
     }
-    private String loadTemplate(String fileName, String name, String newPassword) throws IOException {
+    private String loadTemplate(String fileName, String name, String newPassword) throws IOException, URISyntaxException {
 
+        String content  = "";
         ClassLoader classLoader = getClass().getClassLoader();
-        String content = new String(String.valueOf(classLoader.getResource(fileName)));
-
+        URL resource = classLoader.getResource(fileName);
+        if (resource != null) {
+            content = new String(Files.readAllBytes(Paths.get(resource.toURI())));
+//            System.out.println(content);
+        } else {
+            System.out.println("File not found!");
+        }
         content = content.replace("{{name}}", name);
         content = content.replace("{{newPassword}}", newPassword);
         return content;
     }
 
-    private String loadOTPEmailVerificationTemplate(String fileName, String name, String otp) throws IOException {
-
+    private String loadOTPEmailVerificationTemplate(String fileName, String name, String otp) throws IOException, URISyntaxException {
+        String content  = "";
         ClassLoader classLoader = getClass().getClassLoader();
-        String content = new String(String.valueOf(classLoader.getResource(fileName)));
-
-        content = content.replace("{{name}}", name);
-        content = content.replace("[OTP]", otp);
+        URL resource = classLoader.getResource(fileName);
+        if (resource != null) {
+             content = new String(Files.readAllBytes(Paths.get(resource.toURI())));
+//            System.out.println(content);
+        } else {
+            System.out.println("File not found!");
+        }
+//        System.out.println(content);
+        content = content.replace("{User's Name}", name);
+        content = content.replace("{OTP}", otp);
         return content;
     }
 }

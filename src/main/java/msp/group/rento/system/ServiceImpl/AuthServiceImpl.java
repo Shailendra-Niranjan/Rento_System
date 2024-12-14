@@ -23,8 +23,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -69,7 +71,12 @@ public class AuthServiceImpl implements AuthService {
         }
         Users users = new Users();
         users.setEmail(userDto.getEmail());
+        users.setFullName(userDto.getFullName());
         users.setPassword(encoder.encode(userDto.getPassword()));
+        users.setPhoneNo(userDto.getPhoneNo());
+        users.setActive(true);
+        users.setUpdateAt(new Date());
+        users.setLastActiveTime(new Date());
         Address address = new Address();
         address.setHouseNo(userDto.getHouseNo());
         address.setStreet(userDto.getStreet());
@@ -92,9 +99,11 @@ public class AuthServiceImpl implements AuthService {
         catch (MessagingException e) {
             System.out.println(e);
             return "MessagingException occur while sending mail";
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
         catch (Exception e){
-            return e.getLocalizedMessage();
+            return e.getMessage();
         }
         return "Register Successfully !";
     }
@@ -124,7 +133,9 @@ public class AuthServiceImpl implements AuthService {
             return "IOException occur while sending mail";
         } catch (MessagingException e) {
             System.out.println(e);
-            return "MessagingException occur while sending mail";
+            throw  new RuntimeException(e);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
         return "New Password sent to your email";
     }
@@ -145,6 +156,8 @@ public class AuthServiceImpl implements AuthService {
         } catch (MessagingException e) {
             System.out.println(e);
             return "MessagingException occur while sending mail";
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
         return "Otp send successfully";
     }
@@ -157,6 +170,8 @@ public class AuthServiceImpl implements AuthService {
         }
         otp1.setUsed(true);
         otpRepo.save(otp1);
+        if(otp1.getExpireAt().isBefore(LocalDateTime.now()))return "Otp expired !";
+
         return "Email Verify";
     }
 

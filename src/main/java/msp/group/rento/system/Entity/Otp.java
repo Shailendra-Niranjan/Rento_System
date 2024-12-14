@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Data
 public class Otp extends BaseEntity{
 
+    @Column(unique = true)
     private String otp;
     private String userEmail;
     private LocalDateTime expireAt;
