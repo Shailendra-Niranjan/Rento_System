@@ -65,6 +65,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String registerUser(UserDto userDto) {
+        if(userDto.getPhoneNo().length()!=10)return "Invalid contact number ";
         Users usersExist = userRepository.findUsersByEmail(userDto.getEmail());
         if (usersExist!=null){
             return "User already Exist !";
@@ -92,14 +93,7 @@ public class AuthServiceImpl implements AuthService {
             emailService.userCreationMail(users.getEmail() ,"Account Created" , userDto.getPassword() ,users.getFullName());
 
         }
-        catch (IOException e) {
-            System.out.println(e);
-            return "IOException occur while sending mail";
-        }
-        catch (MessagingException e) {
-            System.out.println(e);
-            return "MessagingException occur while sending mail";
-        } catch (URISyntaxException e) {
+        catch (IOException | MessagingException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
         catch (Exception e){

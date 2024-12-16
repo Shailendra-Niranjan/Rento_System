@@ -13,6 +13,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -30,6 +32,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
     ApplicationContext context;
+
+    @Autowired
+    UserDeatilsServices userDeatilsServices;
 
     private HandlerExceptionResolver handlerExceptionResolver;
     @Autowired
@@ -58,19 +63,16 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
 
-//                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username,null , userDetails.getAuthorities());
-//                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-//                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                    HttpSession session = request.getSession();
-                    session.setAttribute("username", username);
-                    session.setAttribute("role", role);
-                    List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
+                    UserDetails userDetails = userDeatilsServices.loadUserByUsername(username);
 
-                    UsernamePasswordAuthenticationToken authenticationToken =
-                            new UsernamePasswordAuthenticationToken(username, null, authorities);
+                    UsernamePasswordAuthenticationToken authenticationToken = getUsernamePasswordAuthenticationToken(userDetails, username, role);
+
+                    // Set additional details from the request
                     authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
+                    // Set the authentication in the SecurityContext
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
                 }
 
 
@@ -80,5 +82,19 @@ public class JwtFilter extends OncePerRequestFilter {
             catch (Exception ex){
                 handlerExceptionResolver.resolveException(request, response ,null , ex);
             }
+    }
+
+    private static UsernamePasswordAuthenticationToken getUsernamePasswordAuthenticationToken(UserDetails userDetails, String username, String role) {
+        if (userDetails == null) {
+            throw new UsernameNotFoundException("User not found with username: " + username);
+        }
+
+        // Create a list of authorities based on the role
+        List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
+
+        // Create the authentication token
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(userDetails.getUsername(), null, authorities);
+        return authenticationToken;
     }
 }
